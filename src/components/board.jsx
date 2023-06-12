@@ -1,32 +1,90 @@
-import React, { useState } from "react";
-import Squire from "./squire";
+import React, { useEffect, useState } from "react";
+import Square from "./square";
+import calculateWinner from "../utils/calculateWinner";
+import TextUserResult from "./textUserResult";
+import ButtonReset from "./buttonReset";
+import fireWorks from "../utils/fireWorks";
 
 const Board = () => {
-  const [squires, setSquires] = useState(Array(9).fill(null));
-  console.log(squires);
+  const [squares, setSquires] = useState(Array(9).fill(null));
+  const [isNextTurn, setIsNextTurn] = useState(true);
+  const [resultUser, setResultUser] = useState({ userX: 0, userO: 0 });
+  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
+
+  useEffect(() => {
+    if (calculateWinner(squares) === "X") {
+      setResultUser((prevResultUser) => ({
+        ...prevResultUser,
+        userX: prevResultUser.userX + 1,
+      }));
+      setIsButtonDisabled(true);
+    } else if (calculateWinner(squares) === "O") {
+      setResultUser((prevResultUser) => ({
+        ...prevResultUser,
+        userO: prevResultUser.userO + 1,
+      }));
+      setIsButtonDisabled(true);
+    } else {
+      if (!squares.includes(null)) {
+        setIsButtonDisabled(true);
+      }
+    }
+  }, [squares]);
+
+  useEffect(() => {
+    if (resultUser.userX === 3) {
+      fireWorks();
+    } else if (resultUser.userO === 3) {
+      fireWorks();
+    }
+  }, [resultUser.userX, resultUser.userO]);
+
   const handleClick = (item) => {
-    const newSquiresCopy = [...squires];
-    newSquiresCopy[item - 1] = "X";
-    setSquires(newSquiresCopy);
+    const newSquaresCopy = [...squares];
+    if (isNextTurn && newSquaresCopy[item - 1] == null) {
+      newSquaresCopy[item - 1] = "X";
+      setSquires(newSquaresCopy);
+      setIsNextTurn(false);
+    } else if (!isNextTurn && newSquaresCopy[item - 1] == null) {
+      newSquaresCopy[item - 1] = "O";
+      setSquires(newSquaresCopy);
+      setIsNextTurn(true);
+    }
+  };
+
+  const handleClickReset = () => {
+    setSquires(Array(9).fill(null));
+    setIsNextTurn(true);
+    setIsButtonDisabled(false);
   };
 
   return (
-    <div className="board-container">
-      <div className="board-row">
-        <Squire onSquareClick={() => handleClick(1)} value={squires[0]} />
-        <Squire onSquareClick={() => handleClick(2)} value={squires[1]} />
-        <Squire onSquareClick={() => handleClick(3)} value={squires[2]} />
+    <div>
+      <div className="grid-container">
+        {squares.map((value, index) => (
+          <Square
+            key={index}
+            onSquareClick={() => handleClick(index + 1)}
+            value={value}
+            disabled={isButtonDisabled}
+          />
+        ))}
       </div>
-      <div className="board-row">
-        <Squire onSquareClick={() => handleClick(4)} value={squires[3]} />
-        <Squire onSquareClick={() => handleClick(5)} value={squires[4]} />
-        <Squire onSquareClick={() => handleClick(6)} value={squires[5]} />
-      </div>
-      <div className="board-row">
-        <Squire onSquareClick={() => handleClick(7)} value={squires[6]} />
-        <Squire onSquareClick={() => handleClick(8)} value={squires[7]} />
-        <Squire onSquareClick={() => handleClick(9)} value={squires[8]} />
-      </div>
+      <ButtonReset onButtonResetClick={() => handleClickReset()} />
+      <h2>Счет игры</h2>
+      <TextUserResult score={resultUser} />
+      {resultUser.userX === 3 || resultUser.userO === 3 ? (
+        <canvas
+          width="968"
+          height="480"
+          id="fireworks-canvas"
+          className="fireworks"
+        ></canvas>
+      ) : (
+        ""
+      )}
+      {resultUser.userX === 3 ? <h2>Выйграл игрок 1</h2> : ""}
+      {resultUser.userO === 3 ? <h2>Выйграл игрок 2</h2> : ""}
     </div>
   );
 };
